@@ -195,6 +195,8 @@ app.get('/paranoia', function (req, res, next) {
 
 });
 
+app.use(express.static(path.join(__dirname, 'static', 'dist'))
+
 // Start the server
 var port = 1335;
 app.listen(port, function () {
