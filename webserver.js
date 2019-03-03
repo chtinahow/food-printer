@@ -132,76 +132,30 @@ app.post('/print', function (req, res, next) {
 
   // validate the ticket exists, and has the things we want
   const ticket = Object.assign({}, req.body);
-  if (!ticket.project || !ticket.number || !ticket.title || !ticket.author ||
-      !ticket.created || !ticket.body) {
+  if (!ticket.name || !ticket.date || !ticket.category) {
     res.sendStatus(400);
     return;
   }
 
-  // define the limits of each field
-  const limits = {
-    project: 30,
-    number: 30,
-    title: 30,
-    author: 30,
-    created: 30,
-    body: 30
-  };
-
-  // translate the body into it's printed format, so that we can limit by lines
-  const lineBody = ticket.body.split('').reduce((realBody, character)=>{
-    if(character == '\n') {
-      return realBody.concat(['\n']);
-    }
-    if(realBody[realBody.length - 1].length >= 32) {
-      return realBody.concat([character])
-    }
-    return realBody.slice(0, -1).concat(realBody[realBody.length - 1].concat(character))
-  }, ['']).slice(0, limits.body).join('');
-
-  const truncatedTicket = Object.keys(limits).reduce((tinyTicket, prop) => {
-    if (prop == 'body') {
-      return Object.assign({}, tinyTicket, {body: lineBody}); 
-    }
-    if (tinyTicket[prop].length > limits[prop]) {
-      return Object.assign(
-        {}, tinyTicket,
-        {[prop]: tinyTicket[prop].slice(0, limits[prop]-3).concat('...')}
-      );
-    } else {
-      return tinyTicket;
-    }
-  }, ticket);
-
   // do a fancy pattern on the tessel, because we were told to print!
   pattern();
+
+  const spaceBetween = (field, spaces, value) => {
+    return field + '.'.repeat(spaces - field.length - value.length) + value
+  }
 
   // print the JSON
   printer
     .center()
     .horizontalLine(32)
-    .inverse(true)
-    .printLine(" " + truncatedTicket.project + " ")
-    .inverse(false)
-    .lineFeed(1)
-    .bold(true)
-    .printLine(truncatedTicket.number)
-    .printLine(truncatedTicket.title)
-    .bold(false)
-    .lineFeed(1)
+    .lineFeed(12)
+    .printLine(spaceBetween("NAME", 22, ticket.name))
+    .printLine(spaceBetween("CATEGORY", 22, ticket.category))
+    .printLine(spaceBetween("DATE", 22, ticket.date))
     .left(true)
-    .printLine("Author:")
-    .right(true)
-    .printLine(truncatedTicket.author)
-    .left(true)
-    .printLine("Created on:")
-    .right(true)
-    .printLine(truncatedTicket.created)
-    .left(true)
-    .lineFeed(1)
+    .lineFeed(3)
     .horizontalLine(32)
-    .printLine(truncatedTicket.body)
-    .lineFeed(7)
+    .lineFeed(1)
     .print(function() {
       res.sendStatus(204);
     });
@@ -255,7 +209,7 @@ app.listen(port, function () {
     printer
       .center()
       .horizontalLine(16)
-      .printLine('Point of Tickets')
+      .printLine('Food tickets!')
       .printLine('listening on:')
       .inverse(true)
       .printLine(' '+ip+':'+port+' ')
